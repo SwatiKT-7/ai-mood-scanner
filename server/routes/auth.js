@@ -21,20 +21,36 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-// Login route
+// Login route with debug logs
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
+  console.log("Login attempt:", email, password);
+
   try {
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ msg: 'Invalid credentials' });
+    console.log("User from DB:", user);
+
+    if (!user) {
+      console.log("❌ User not found");
+      return res.status(400).json({ msg: 'Invalid credentials' });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });
+    console.log("✅ Password match:", isMatch);
+
+    if (!isMatch) {
+      console.log("❌ Incorrect password");
+      return res.status(400).json({ msg: 'Invalid credentials' });
+    }
+
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.json({ token, user: { id: user._id, email: user.email } });
   } catch (err) {
+    console.error("🔥 Server error:", err);
     res.status(500).json({ msg: 'Server error' });
   }
 });
+
 
 // JWT middleware
 function authMiddleware(req, res, next) {
